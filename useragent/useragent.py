@@ -404,30 +404,30 @@ def GetFilters(user_agent_string, js_user_agent_string=None,
 # Build the list of user agent parsers from YAML
 UA_PARSER_YAML = os.getenv("UA_PARSER_YAML")
 regexes = None
+yamlPath = resource_filename(__name__, 'regexes.yaml')
+# if not UA_PARSER_YAML:
+#     yamlPath = resource_filename(__name__, 'regexes.yaml')
+#     json_path = resource_filename(__name__, 'regexes.json')
+# else:
+#     import yaml
 
-if not UA_PARSER_YAML:
-    yamlPath = resource_filename(__name__, 'regexes.yaml')
-    json_path = resource_filename(__name__, 'regexes.json')
-else:
-    import yaml
-
-    yamlFile = open(UA_PARSER_YAML)
-    regexes = yaml.load(yamlFile)
-    yamlFile.close()
+#     yamlFile = open(UA_PARSER_YAML)
+#     regexes = yaml.load(yamlFile)
+#     yamlFile.close()
 
 # If UA_PARSER_YAML is not specified, load regexes from regexes.json before
 # falling back to yaml format
-if regexes is None:
-    try:
-        json_file = open(json_path)
-        regexes = json.loads(json_file.read())
-        json_file.close()
-    except IOError:
-        import yaml
+# if regexes is None:
+#     try:
+#         json_file = open(json_path)
+#         regexes = json.loads(json_file.read())
+#         json_file.close()
+#     except IOError:
+import yaml
 
-        yamlFile = open(yamlPath)
-        regexes = yaml.load(yamlFile)
-        yamlFile.close()
+yamlFile = open(yamlPath)
+regexes = yaml.load(yamlFile)
+yamlFile.close()
 
 
 USER_AGENT_PARSERS = []
