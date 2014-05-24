@@ -8,4 +8,5 @@ setup(name='useragent',
       author_email='snormore@gmail.com',
       license='Apache',
       packages=['useragent'],
-      zip_safe=False)
+      package_data={'useragent': ['data/*', ]},
+      include_package_data=True)

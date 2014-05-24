@@ -30,7 +30,7 @@ import re
 import unittest
 import yaml
 
-import user_agent_parser
+import useragent
 
 TEST_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                   '../../test_resources')
@@ -39,7 +39,7 @@ TEST_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
 class ParseTest(unittest.TestCase):
     def testBrowserscopeStrings(self):
         self.runUserAgentTestsFromYAML(os.path.join(
-            TEST_RESOURCES_DIR, 'test_user_agent_parser.yaml'))
+            TEST_RESOURCES_DIR, 'test_useragent.yaml'))
 
     def testBrowserscopeStringsOS(self):
         self.runOSTestsFromYAML(os.path.join(
@@ -89,7 +89,7 @@ class ParseTest(unittest.TestCase):
           'string': user_agent_string
         }
 
-        result = user_agent_parser.Parse(user_agent_string)
+        result = useragent.Parse(user_agent_string)
         self.assertEqual(result, expected,
             u"UA: {0}\n expected<{1}> != actual<{2}>".format(user_agent_string, expected, result))
 
@@ -110,7 +110,7 @@ class ParseTest(unittest.TestCase):
             if 'js_ua' in test_case:
                 kwds = eval(test_case['js_ua'])
 
-            (family, major, minor, patch) = user_agent_parser.ParseUserAgent(user_agent_string, **kwds)
+            (family, major, minor, patch) = useragent.ParseUserAgent(user_agent_string, **kwds)
 
             # Escape any double-quotes in the UA string
             user_agent_string = re.sub(r'"', '\\"', user_agent_string)
@@ -141,7 +141,7 @@ class ParseTest(unittest.TestCase):
                         'patch': test_case['patch']}
 
             result = {}
-            result = user_agent_parser.ParseUserAgent(user_agent_string, **kwds)
+            result = useragent.ParseUserAgent(user_agent_string, **kwds)
             self.assertEqual(result, expected,
                     u"UA: {0}\n expected<{1}, {2}, {3}, {4}> != actual<{5}, {6}, {7}, {8}>".format(\
                             user_agent_string,
@@ -169,7 +169,7 @@ class ParseTest(unittest.TestCase):
               'patch_minor': test_case['patch_minor']
             }
 
-            result = user_agent_parser.ParseOS(user_agent_string, **kwds)
+            result = useragent.ParseOS(user_agent_string, **kwds)
             self.assertEqual(result, expected,
                     u"UA: {0}\n expected<{1} {2} {3} {4} {5}> != actual<{6} {7} {8} {9} {10}>".format(\
                             user_agent_string,
@@ -201,7 +201,7 @@ class ParseTest(unittest.TestCase):
               'family': test_case['family']
             }
 
-            result = user_agent_parser.ParseDevice(user_agent_string, **kwds)
+            result = useragent.ParseDevice(user_agent_string, **kwds)
             self.assertEqual(result, expected,
                 u"UA: {0}\n expected<{1}> != actual<{2}>".format(
                     user_agent_string,
@@ -212,13 +212,13 @@ class ParseTest(unittest.TestCase):
 class GetFiltersTest(unittest.TestCase):
     def testGetFiltersNoMatchesGiveEmptyDict(self):
         user_agent_string = 'foo'
-        filters = user_agent_parser.GetFilters(
+        filters = useragent.GetFilters(
                 user_agent_string, js_user_agent_string=None)
         self.assertEqual({}, filters)
 
     def testGetFiltersJsUaPassedThrough(self):
         user_agent_string = 'foo'
-        filters = user_agent_parser.GetFilters(
+        filters = useragent.GetFilters(
                 user_agent_string, js_user_agent_string='bar')
         self.assertEqual({'js_user_agent_string': 'bar'}, filters)
 
@@ -226,7 +226,7 @@ class GetFiltersTest(unittest.TestCase):
         user_agent_string = ('Mozilla/4.0 (compatible; MSIE 8.0; '
                 'Windows NT 5.1; Trident/4.0; GTB6; .NET CLR 2.0.50727; '
                 '.NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)')
-        filters = user_agent_parser.GetFilters(
+        filters = useragent.GetFilters(
                 user_agent_string, js_user_agent_string='bar',
                 js_user_agent_family='foo')
         self.assertEqual({'js_user_agent_string': 'bar',

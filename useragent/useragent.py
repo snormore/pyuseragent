@@ -1,38 +1,8 @@
-#!/usr/bin/env python
-#
-# Copyright 2009 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the 'License')
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#         http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Python implementation of the UA parser."""
-
-__author__ = 'Lindsey Simon <elsigh@gmail.com>'
-
 import json
 import os
 import re
 
-# pip may copy regexes.yaml to different places depending on the OS.
-# For example, on Mac pip copies regexes.yaml to the folder where
-# user_agent_parser.py lives where as Fedora leaves regexes.yaml to "data" dir
-# See https://github.com/tobie/ua-parser/issues/209 for the complete discussion
-
-ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.abspath(os.path.join(ROOT_DIR, '..', 'data'))
-regex_dir = ROOT_DIR if os.path.exists(os.path.join(ROOT_DIR, 'regexes.yaml')) else DATA_DIR
-
 from pkg_resources import resource_filename
-
 
 class UserAgentParser(object):
     def __init__(self, pattern, family_replacement=None, v1_replacement=None, v2_replacement=None):
@@ -172,6 +142,27 @@ class DeviceParser(object):
         return device
 
 
+class FormFactorParser(object):
+
+    def IsBot(self, user_agent_string):
+        return BOTS_REGEX.search(user_agent_string) or user_agent_string in BOT_USER_AGENTS       
+
+    def Parse(self, user_agent_string):
+        user_agent_string = user_agent_string.lower()
+        if self.IsBot(user_agent_string):
+            return 'bot'
+        elif MOBILE_REGEX.search(user_agent_string) and not MOBILE_NEG_REGEX.search(user_agent_string):
+            return 'mobile'
+        elif TABLET_REGEX.search(user_agent_string):
+            return 'tablet'
+        else:
+            return 'web'
+
+
+def IsBot(user_agent_string):
+    return FormFactorParser().IsBot(user_agent_string)
+
+
 def Parse(user_agent_string, **jsParseBits):
     """ Parse all the things
     Args:
@@ -185,6 +176,7 @@ def Parse(user_agent_string, **jsParseBits):
         'user_agent': ParseUserAgent(user_agent_string, **jsParseBits),
         'os': ParseOS(user_agent_string, **jsParseBits),
         'device': ParseDevice(user_agent_string, **jsParseBits),
+        'form_factor': ParseFormFactor(user_agent_string, **jsParseBits),
         'string': user_agent_string
     }
 
@@ -272,6 +264,12 @@ def ParseDevice(user_agent_string):
 
     return {
         'family': device
+    }
+
+
+def ParseFormFactor(user_agent_string):
+    return {
+        'form_factor': FormFactorParser().Parse(user_agent_string)
     }
 
 
@@ -404,25 +402,7 @@ def GetFilters(user_agent_string, js_user_agent_string=None,
 # Build the list of user agent parsers from YAML
 UA_PARSER_YAML = os.getenv("UA_PARSER_YAML")
 regexes = None
-yamlPath = resource_filename(__name__, 'regexes.yaml')
-# if not UA_PARSER_YAML:
-#     yamlPath = resource_filename(__name__, 'regexes.yaml')
-#     json_path = resource_filename(__name__, 'regexes.json')
-# else:
-#     import yaml
-
-#     yamlFile = open(UA_PARSER_YAML)
-#     regexes = yaml.load(yamlFile)
-#     yamlFile.close()
-
-# If UA_PARSER_YAML is not specified, load regexes from regexes.json before
-# falling back to yaml format
-# if regexes is None:
-#     try:
-#         json_file = open(json_path)
-#         regexes = json.loads(json_file.read())
-#         json_file.close()
-#     except IOError:
+yamlPath = resource_filename(__name__, 'data/regexes.yaml')
 import yaml
 
 yamlFile = open(yamlPath)
@@ -472,14 +452,39 @@ for _os_parser in regexes['os_parsers']:
                                _os_v1_replacement,
                                _os_v2_replacement))
 
-
 DEVICE_PARSERS = []
 for _device_parser in regexes['device_parsers']:
     _regex = _device_parser['regex']
-
     _device_replacement = None
     if 'device_replacement' in _device_parser:
         _device_replacement = _device_parser['device_replacement']
-
     DEVICE_PARSERS.append(DeviceParser(_regex, _device_replacement))
+
+mobileSubstringsPath = resource_filename(__name__, 'data/mobile_substrings.csv')
+mobileSubstringsFile = open(mobileSubstringsPath)
+mobileSubstrings = mobileSubstringsFile.read().splitlines()
+mobileSubstringsFile.close()
+
+tabletSubstringsPath = resource_filename(__name__, 'data/tablet_substrings.csv')
+tabletSubstringsFile = open(tabletSubstringsPath)
+tabletSubstrings = tabletSubstringsFile.read().splitlines()
+tabletSubstringsFile.close()
+
+botSubstringsPath = resource_filename(__name__, 'data/bot_substrings.csv')
+botSubstringsFile = open(botSubstringsPath)
+botSubstrings = botSubstringsFile.read().splitlines()
+botSubstringsFile.close()
+
+botUserAgentsPath = resource_filename(__name__, 'data/bot_user_agents.csv')
+botUserAgentsFile = open(botUserAgentsPath)
+botUserAgents = botUserAgentsFile.read().splitlines()
+botUserAgentsFile.close()
+
+
+MOBILE_REGEX = re.compile("(%s)" % ('|'.join([s.lower() for s in mobileSubstrings if len(s) > 0 and s[0] != '!']), ))
+MOBILE_NEG_REGEX = re.compile("(%s)" % ('|'.join([s.lower() for s in mobileSubstrings if len(s) > 0 and s[0] == '!']), ))
+TABLET_REGEX = re.compile("(%s)" % ('|'.join([s.lower() for s in tabletSubstrings]), ))
+BOTS_REGEX = re.compile("(%s)" % ('|'.join([s.lower() for s in botSubstrings]), ))
+BOT_USER_AGENTS = set([ua.lower() for ua in botUserAgents])
+
 
