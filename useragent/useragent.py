@@ -145,6 +145,7 @@ class DeviceParser(object):
 class FormFactorParser(object):
 
     def IsBot(self, user_agent_string):
+        user_agent_string = user_agent_string.lower()
         return BOTS_REGEX.search(user_agent_string) or user_agent_string in BOT_USER_AGENTS       
 
     def Parse(self, user_agent_string):
