@@ -269,7 +269,7 @@ def ParseDevice(user_agent_string):
 
 def ParseFormFactor(user_agent_string):
     return {
-        'form_factor': FormFactorParser().Parse(user_agent_string)
+        'family': FormFactorParser().Parse(user_agent_string)
     }
 
 
